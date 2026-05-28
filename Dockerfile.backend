@@ -1,0 +1,29 @@
+# ─── Dockerfile для Django-бэка ────────────────────────────────────────────
+# Используем тонкий образ Python. slim — баланс между размером и совместимостью.
+FROM python:3.12-slim
+
+# Не создавать .pyc файлы и не буферизовать вывод (логи сразу видны в docker logs).
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
+
+# Рабочая директория внутри контейнера.
+WORKDIR /app
+
+# Сначала ставим зависимости — отдельным слоем.
+# Если requirements.txt не менялся, Docker возьмёт этот слой из кэша
+# и не будет переустанавливать pip-пакеты при каждой сборке.
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Копируем весь код проекта.
+# .dockerignore исключает лишнее (venv, __pycache__, node_modules и т.д.).
+COPY . .
+
+# Открываем порт Django.
+EXPOSE 8000
+
+# entrypoint.sh ждёт hardhat-ноду, прогоняет миграции и стартует сервер.
+COPY docker/backend-entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
+CMD ["/entrypoint.sh"]

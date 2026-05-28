@@ -1,0 +1,28 @@
+# ─── Dockerfile для hardhat-ноды ────────────────────────────────────────────
+FROM node:20-alpine
+
+WORKDIR /app
+
+# Сначала ставим зависимости — отдельным слоем для кэша.
+COPY package.json package-lock.json* ./
+RUN npm install --silent --no-audit --no-fund
+
+# Копируем остальные файлы (контракты, конфиги, скрипты).
+COPY hardhat.config.js ./
+COPY contracts ./contracts
+COPY scripts ./scripts
+COPY ignition ./ignition
+COPY docker/healthcheck.js ./healthcheck.js
+
+# ВАЖНО: компиляцию контракта (npx hardhat compile) НЕ делаем здесь.
+# Причина: на этапе docker build скачивание компилятора solc с
+# binaries.soliditylang.org часто обрывается (SocketError) из-за
+# файрволов/антивирусов, которые иначе обрабатывают сеть в build-контексте.
+# Компиляция произойдёт в рантайме — нода компилирует контракт при старте,
+# а deployer повторяет попытки при деплое (см. deployer-entrypoint.sh).
+
+EXPOSE 8545
+
+# --hostname 0.0.0.0 — слушать на всех интерфейсах, чтобы другие контейнеры
+# в сети могли подключиться.
+CMD ["npx", "hardhat", "node", "--hostname", "0.0.0.0"]

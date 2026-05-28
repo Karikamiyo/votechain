@@ -1,0 +1,42 @@
+# Python
+venv/
+__pycache__/
+*.pyc
+*.pyo
+.python-version
+db.sqlite3
+
+# Node / Hardhat
+node_modules/
+artifacts/
+cache/
+typechain-types/
+ignition/deployments/
+
+# Frontend сборка (она своя)
+frontend/
+
+# Git и IDE
+.git/
+.gitignore
+.vscode/
+.idea/
+*.swp
+.DS_Store
+
+# Docker (не копировать самих себя в образ)
+docker-compose.yml
+Dockerfile*
+.dockerignore
+
+# Env
+.env
+.env.local
+.env.*.local
+
+# Тестовые скрипты
+*.ps1
+test_*.ps1
+
+# Документация
+*.md

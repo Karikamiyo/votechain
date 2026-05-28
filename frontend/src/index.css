@@ -1,0 +1,18 @@
+/*
+  Эти три директивы — обязательные для Tailwind.
+  Они подключают базовые стили, компоненты и утилиты.
+*/
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Базовый цвет фона и текста для всего сайта */
+body {
+  @apply bg-gray-50 text-gray-900;
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+/* RainbowKit ставит модалку, которая иногда плохо сочетается с тёмным фоном */
+:root {
+  --rk-fonts-body: ui-sans-serif, system-ui, sans-serif;
+}

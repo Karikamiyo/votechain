@@ -1,0 +1,43 @@
+# Python / Django
+venv/
+env/
+__pycache__/
+*.py[cod]
+*.egg-info/
+db.sqlite3
+db.sqlite3-journal
+staticfiles/
+
+# Node.js / Hardhat
+node_modules/
+artifacts/
+cache/
+typechain-types/
+ignition/deployments/
+coverage/
+
+# Frontend (Vite/React)
+frontend/node_modules/
+frontend/dist/
+frontend/dist-ssr/
+frontend/*.local
+
+# Переменные окружения (секреты!)
+.env
+.env.local
+.env.*.local
+frontend/.env
+frontend/.env.local
+
+# IDE и системные
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
+
+# Логи
+*.log
+npm-debug.log*
+yarn-error.log*
+"@ | Out-File -FilePath .gitignore -Encoding utf8

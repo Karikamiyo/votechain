@@ -1,0 +1,20 @@
+{
+  "name": "votechain",
+  "version": "1.0.0",
+  "description": "Production-like blockchain voting MVP built with Solidity, Hardhat, and Polygon Amoy.",
+  "private": true,
+  "scripts": {
+    "compile": "hardhat compile",
+    "test": "hardhat test",
+    "node": "hardhat node",
+    "deploy:local": "hardhat run scripts/deploy.js --network localhost",
+    "deploy:amoy": "hardhat run scripts/deploy.js --network amoy",
+    "interact:local": "hardhat run scripts/interact.js --network localhost",
+    "interact:amoy": "hardhat run scripts/interact.js --network amoy"
+  },
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^5.0.0",
+    "dotenv": "^16.4.5",
+    "hardhat": "^2.22.19"
+  }
+}

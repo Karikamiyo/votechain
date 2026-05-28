@@ -1,0 +1,99 @@
+# ─── docker-compose.yml ─────────────────────────────────────────────────────
+# Запуск: docker compose up --build
+# Остановка: Ctrl+C, потом docker compose down
+# Полная очистка (со сбросом блокчейна): docker compose down -v
+
+services:
+
+  # ─── Hardhat-нода — наш локальный блокчейн ────────────────────────────────
+  hardhat:
+    build:
+      context: .
+      dockerfile: Dockerfile.hardhat
+    container_name: votechain-hardhat
+    ports:
+      # Пробрасываем порт наружу, чтобы MetaMask мог подключиться
+      # к http://localhost:8545
+      - "8545:8545"
+    # Том для artifacts/ — чтобы бэк смог прочитать ABI контракта.
+    volumes:
+      - hardhat-artifacts:/app/artifacts
+    # Проверка готовности: если нода ответит на eth_chainId, она здорова.
+    # Проверка готовности через node (он точно есть в node-образе,
+    # в отличие от wget/curl, которых может не быть в alpine).
+    # healthcheck.js делает JSON-RPC запрос eth_chainId и проверяет result.
+    healthcheck:
+      test: ["CMD", "node", "/app/healthcheck.js"]
+      interval: 3s
+      timeout: 4s
+      retries: 30
+      start_period: 10s
+
+  # ─── Deployer — однократный сервис, деплоит контракт ─────────────────────
+  deployer:
+    build:
+      context: .
+      dockerfile: Dockerfile.hardhat
+    container_name: votechain-deployer
+    depends_on:
+      hardhat:
+        condition: service_healthy
+    environment:
+      HARDHAT_URL: http://hardhat:8545
+    # Перетираем CMD: вместо запуска ноды — запускаем деплой.
+    entrypoint: /deployer-entrypoint.sh
+    volumes:
+      - hardhat-artifacts:/app/artifacts
+      - ./docker/deployer-entrypoint.sh:/deployer-entrypoint.sh:ro
+    # После деплоя контейнер должен завершиться. Если упал — не перезапускать.
+    restart: "no"
+
+  # ─── Backend — Django + DRF + web3.py ────────────────────────────────────
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    container_name: votechain-backend
+    depends_on:
+      # ждём деплоера — он завершится с успехом, когда контракт окажется в сети.
+      deployer:
+        condition: service_completed_successfully
+    environment:
+      # Внутри docker-сети адрес ноды — это имя сервиса.
+      RPC_URL: http://hardhat:8545
+      # Первый аккаунт hardhat — он же owner контракта.
+      PRIVATE_KEY: "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"
+      # Детерминированный адрес первого контракта в чистой hardhat-сети.
+      CONTRACT_ADDRESS: "0x5FbDB2315678afecb367f032d93F642f64180aa3"
+      # Django.
+      DJANGO_DEBUG: "True"
+      DJANGO_ALLOWED_HOSTS: "*"
+      CORS_ALLOW_ALL: "True"
+    ports:
+      - "8000:8000"
+    volumes:
+      # ABI контракта читается из artifacts/ через том.
+      - hardhat-artifacts:/app/artifacts
+
+  # ─── Frontend — собранный React + nginx ──────────────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      # Build-args передаются в Dockerfile на этапе сборки —
+      # они "вшиваются" в JS-бандл, потому что Vite инлайнит env-переменные.
+      args:
+        VITE_RPC_URL: http://localhost:8545
+        VITE_CHAIN_ID: "31337"
+        VITE_CONTRACT_ADDRESS: "0x5FbDB2315678afecb367f032d93F642f64180aa3"
+    container_name: votechain-frontend
+    depends_on:
+      - backend
+    ports:
+      - "80:80"
+
+# ─── Тома (persistent volumes) ──────────────────────────────────────────────
+volumes:
+  # Тут лежат скомпилированные контракты (ABI + bytecode).
+  # При `docker compose down -v` том удалится и блокчейн начнётся с нуля.
+  hardhat-artifacts:
